@@ -48,8 +48,7 @@ const [api] = await tools.rlm_collect({ ids: ["api"], timeoutMs: 600000 });
 - Its transcript is a normal session file, in a folder named after the parent's session file, with `parentSession` set.
 - When a child finishes and no `rlm_collect` was waiting for it, the parent gets an `rlm` message that wakes it if it
   is idle.
-- Children can start children down to `maxDepth`. At most `maxChildren` run at once across the process; spawning or
-  restarting beyond that fails.
+- Children can start children down to `maxDepth`. Nothing limits how many run at once.
 - Ids look like `c1` and keep counting across resumes of the parent; names of that form are refused.
 - Every `rlm_spawn`, `rlm_collect`, `rlm_send` and `rlm_cancel` result carries the cost this session's descendants
   ran up since the last one, so it lands in this session's totals. Cost run up after the last such call stays in the
@@ -68,7 +67,7 @@ cancelling also work over RPC.
 loading.
 
 ```json
-{ "model": "openrouter/qwen/qwen3-30b-a3b-instruct-2507", "maxDepth": 2, "maxCalls": 8, "maxChildren": 8, "trace": false }
+{ "model": "openrouter/qwen/qwen3-30b-a3b-instruct-2507", "maxDepth": 2, "maxCalls": 8, "trace": false }
 ```
 
 | Key | Default | Meaning |
@@ -76,7 +75,6 @@ loading.
 | `model` | the session's model | Default model for plain calls and children, as `provider/id`. |
 | `maxDepth` | `2` | How deep children nest: 2 allows children and grandchildren, 0 allows none. |
 | `maxCalls` | `8` | Plain calls running at once across the process. |
-| `maxChildren` | `8` | Children running at once across the process. |
 | `trace` | `false` | Append every plain call to a trace file next to the session. |
 
 ## Trace

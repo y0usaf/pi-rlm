@@ -100,15 +100,6 @@ const SNAPSHOT = Type.Object({
 	session: Type.Union([Type.String(), Type.Null()]),
 });
 
-let runningChildren = 0;
-
-function reserve(limit: number): void {
-	if (runningChildren >= limit) {
-		throw new Error(`rlm: ${limit} children are already running; collect or cancel some first`);
-	}
-	runningChildren++;
-}
-
 function addUsage(a: Usage, b: Usage, sign: 1 | -1 = 1): Usage {
 	return {
 		input: a.input + sign * b.input,
@@ -215,7 +206,6 @@ function startRun(child: Child): void {
 
 function stopRun(child: Child): void {
 	child.active = false;
-	runningChildren--;
 	child.endedAt = Date.now();
 	child.endRun();
 }
@@ -302,7 +292,6 @@ export async function send(child: Child, message: string): Promise<"steered" | "
 		await child.session.steer(message);
 		return "steered";
 	}
-	reserve(child.owner.tree.config.maxChildren);
 	startRun(child);
 	child.owner.tree.changed();
 	prompt(child, message);
@@ -435,8 +424,7 @@ export function registerChildren(
 			"Start a child agent on a task and return its handle at once. The child is a pi session with codemode, " +
 			`this session's built-in tools and these rlm tools, so it can spawn children of its own, down to depth ${config.maxDepth}. ` +
 			"It sees only the prompt: include every path and fact it needs. " +
-			"When it finishes, this session gets a notice, unless rlm_collect was waiting for it. " +
-			`At most ${config.maxChildren} children run at once across the process; beyond that, spawning fails.`,
+			"When it finishes, this session gets a notice, unless rlm_collect was waiting for it.",
 		parameters: Type.Object({
 			prompt: Type.String({ description: "The whole task for the child." }),
 			name: Type.Optional(Type.String({ description: "Unique among this session's children. Default: the id." })),
@@ -466,7 +454,6 @@ export function registerChildren(
 			const model = resolveModel(ctx, params.model ?? config.model);
 			nextId++;
 			pi.appendEntry(ID_ENTRY, { next: nextId });
-			reserve(config.maxChildren);
 			starting.add(id).add(name);
 			const childScope: Scope = {
 				tree: scope.tree,
@@ -493,9 +480,6 @@ export function registerChildren(
 					childScope,
 					extensionFor,
 				);
-			} catch (error) {
-				runningChildren--;
-				throw error;
 			} finally {
 				starting.delete(id);
 				starting.delete(name);
@@ -503,7 +487,6 @@ export function registerChildren(
 			const { session, sessionManager } = opened;
 			if (scope.closed) {
 				session.dispose();
-				runningChildren--;
 				throw new Error("rlm_spawn: this session is shutting down");
 			}
 			const child: Child = {
@@ -527,7 +510,6 @@ export function registerChildren(
 			scope.children.set(id, child);
 			session.subscribe((event) => {
 				if (event.type === "agent_start" && !child.active && !childScope.closed) {
-					runningChildren++;
 					startRun(child);
 					scope.tree.changed();
 				} else if (event.type === "agent_settled") {

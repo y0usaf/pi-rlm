@@ -13,7 +13,6 @@ export interface Config {
 	model: ModelRef | undefined;
 	maxDepth: number;
 	maxCalls: number;
-	maxChildren: number;
 	trace: boolean;
 }
 
@@ -40,7 +39,7 @@ function count(path: string, key: string, value: unknown, min: number): number {
 
 export function readConfig(): Config {
 	const path = join(getAgentDir(), "pi-rlm.json");
-	const config: Config = { model: undefined, maxDepth: 2, maxCalls: 8, maxChildren: 8, trace: false };
+	const config: Config = { model: undefined, maxDepth: 2, maxCalls: 8, trace: false };
 	if (!existsSync(path)) return config;
 	const data: unknown = JSON.parse(readFileSync(path, "utf8"));
 	if (typeof data !== "object" || data === null || Array.isArray(data))
@@ -54,8 +53,6 @@ export function readConfig(): Config {
 			config.maxDepth = count(path, key, value, 0);
 		} else if (key === "maxCalls") {
 			config.maxCalls = count(path, key, value, 1);
-		} else if (key === "maxChildren") {
-			config.maxChildren = count(path, key, value, 1);
 		} else if (key === "trace") {
 			if (typeof value !== "boolean") throw new Error(`${path}: trace must be true or false`);
 			config.trace = value;

@@ -3,12 +3,6 @@
 	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
 	"files": { "ignoreUnknown": true, "includes": ["**/*.ts", "**/*.json", "**/*.jsonc"] },
 	"formatter": { "enabled": true, "indentStyle": "tab", "indentWidth": 3, "lineWidth": 120 },
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"style": { "noNonNullAssertion": "off", "useConst": "error", "useNodejsImportProtocol": "off" }
-		}
-	},
+	"linter": { "enabled": true, "rules": { "preset": "recommended", "style": { "useConst": "error" } } },
 	"assist": { "enabled": false }
 }
